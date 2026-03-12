@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Condition 1 — Module List</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --canvas-red: #E66000;
+    --canvas-dark: #0A1F44;
+    --canvas-mid: #122255;
+    --canvas-light-bg: #F5F5F5;
+    --canvas-white: #FFFFFF;
+    --canvas-border: #C7CDD1;
+    --canvas-text: #2D3B45;
+    --canvas-muted: #6B7280;
+    --canvas-link: #0770A3;
+    --canvas-green: #00AC18;
+    --canvas-blue-light: #E8F3FA;
+    --complete-green: #127A1B;
+    --incomplete-gray: #6B7280;
+  }
+
+  body {
+    font-family: 'Lato', sans-serif;
+    background: var(--canvas-light-bg);
+    color: var(--canvas-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* TOP NAV */
+  .top-nav {
+    background: var(--canvas-dark);
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .nav-logo {
+    width: 32px; height: 32px;
+    background: var(--canvas-red);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: white; font-size: 14px;
+  }
+  .nav-course-name {
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .nav-right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 20px;
+  }
+  .nav-icon { color: #B8C1C8; font-size: 18px; cursor: pointer; }
+  .nav-avatar {
+    width: 30px; height: 30px;
+    background: #6B7280;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 12px; font-weight: 700;
+  }
+
+  /* LAYOUT */
+  .app-layout {
+    display: flex;
+    margin-top: 56px;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* LEFT SIDEBAR */
+  .sidebar {
+    width: 200px;
+    background: var(--canvas-mid);
+    flex-shrink: 0;
+    padding-top: 8px;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    color: #B8C1C8;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+    text-decoration: none;
+  }
+  .sidebar-item:hover { background: rgba(255,255,255,0.08); color: white; }
+  .sidebar-item.active {
+    background: rgba(255,255,255,0.12);
+    color: white;
+    border-left: 3px solid var(--canvas-red);
+  }
+  .sidebar-icon { font-size: 15px; width: 18px; text-align: center; }
+
+  /* MAIN CONTENT */
+  .main-content {
+    flex: 1;
+    padding: 24px 32px;
+    max-width: 900px;
+  }
+
+  .page-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--canvas-text);
+    margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 13px;
+    color: var(--canvas-muted);
+    margin-bottom: 20px;
+  }
+
+  /* PROGRESS BAR */
+  .progress-bar-wrapper {
+    background: white;
+    border: 1px solid var(--canvas-border);
+    border-radius: 6px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .progress-label { font-size: 13px; color: var(--canvas-muted); white-space: nowrap; }
+  .progress-track {
+    flex: 1;
+    height: 8px;
+    background: var(--canvas-border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 40%;
+    background: var(--canvas-green);
+    border-radius: 4px;
+  }
+  .progress-pct { font-size: 13px; font-weight: 700; color: var(--complete-green); }
+
+  /* MODULE */
+  .module {
+    background: white;
+    border: 1px solid var(--canvas-border);
+    border-radius: 6px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .module-header {
+    background: var(--canvas-dark);
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .module-chevron {
+    color: #B8C1C8;
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+  .module-chevron.open { transform: rotate(90deg); }
+  .module-title {
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    flex: 1;
+  }
+  .prereq-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #FFD580;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,213,128,0.5);
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin-left: 8px;
+    white-space: nowrap;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: background 0.15s;
+  }
+  .prereq-badge:hover {
+    background: rgba(255,213,128,0.25);
+  }
+  /* H1 — Next due date on collapsed header */
+  .module-next-due {
+    font-size: 10px;
+    color: #FFD580;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-left: 4px;
+  }
+  .module-next-due.overdue { color: #FF8A7A; }
+
+  /* H6 — Status badges with icon + text */
+  .module-status-badge {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 10px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .badge-complete { background: #127A1B; color: white; }
+  .badge-incomplete { background: #6B7280; color: white; }
+  .badge-inprogress { background: var(--canvas-red); color: white; }
+
+  /* H5 — Prereq warning toast */
+  .prereq-toast {
+    display: none;
+    position: fixed;
+    bottom: 32px; left: 50%; transform: translateX(-50%);
+    background: #7B3F00;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    z-index: 300;
+    max-width: 480px;
+    text-align: center;
+    animation: fadeUp 0.2s ease;
+  }
+  .prereq-toast.visible { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  /* H9 — Error recovery message in detail panel */
+  .detail-prereq-warning {
+    display: none;
+    background: #FEF3CD;
+    border: 1px solid #F0C040;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: #7B3F00;
+    line-height: 1.5;
+  }
+  .detail-prereq-warning.visible { display: block; }
+
+  /* MODULE ITEMS */
+  .module-items { display: block; }
+  .module-items.collapsed { display: none; }
+
+  .module-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 18px 10px 36px;
+    border-bottom: 1px solid var(--canvas-border);
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.12s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .module-item:last-child { border-bottom: none; }
+  .module-item:hover { background: var(--canvas-blue-light); }
+  .module-item.active { background: var(--canvas-blue-light); border-left: 3px solid var(--canvas-link); }
+
+  .item-icon {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .icon-complete { background: #D4EDDA; color: #127A1B; }
+  .icon-incomplete { background: #E9ECEF; color: #6B7280; }
+  .icon-locked { background: #F3F4F6; color: #9CA3AF; }
+
+  .item-label {
+    flex: 1;
+    font-size: 13px;
+    color: var(--canvas-link);
+  }
+  .item-label.locked { color: #9CA3AF; }
+
+  .item-due {
+    font-size: 11px;
+    color: var(--canvas-muted);
+    white-space: nowrap;
+  }
+  .item-due.overdue { color: #C0392B; font-weight: 600; }
+  .item-points {
+    font-size: 11px;
+    color: var(--canvas-muted);
+    white-space: nowrap;
+  }
+
+  /* DETAIL PANEL (slide-in) */
+  .detail-overlay {
+    display: none;
+    position: fixed;
+    top: 56px; right: 0; bottom: 0;
+    width: 420px;
+    background: white;
+    border-left: 1px solid var(--canvas-border);
+    box-shadow: -4px 0 16px rgba(0,0,0,0.12);
+    z-index: 50;
+    flex-direction: column;
+    overflow-y: auto;
+    animation: slideIn 0.22s ease;
+  }
+  .detail-overlay.visible { display: flex; }
+  @keyframes slideIn { from { transform: translateX(30px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+  .detail-header {
+    background: var(--canvas-dark);
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .detail-close {
+    background: none; border: none;
+    color: #B8C1C8; font-size: 20px; cursor: pointer;
+    margin-left: auto; line-height: 1;
+  }
+  .detail-title { color: white; font-size: 15px; font-weight: 700; }
+  .detail-module-label { color: #B8C1C8; font-size: 12px; margin-top: 2px; }
+
+  .detail-body { padding: 20px; flex: 1; }
+  .detail-meta-row {
+    display: flex; gap: 24px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--canvas-border);
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-key { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--canvas-muted); }
+  .meta-val { font-size: 14px; font-weight: 700; color: var(--canvas-text); }
+  .meta-val.due { color: #C0392B; }
+
+  .detail-section-title {
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--canvas-muted);
+    margin-bottom: 8px; margin-top: 16px;
+  }
+  .detail-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--canvas-text);
+  }
+  .detail-btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 9px 20px;
+    background: var(--canvas-red);
+    color: white;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+  }
+  .detail-btn:hover { background: #CC5500; }
+
+  /* DIM OVERLAY when detail panel open */
+  .dim-overlay {
+    display: none;
+    position: fixed;
+    top: 56px; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 49;
+  }
+  .dim-overlay.visible { display: block; }
+  .screen-label {
+    position: fixed;
+    bottom: 16px; right: 16px;
+    background: var(--canvas-dark);
+    color: white;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    opacity: 0.7;
+    z-index: 200;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <div class="nav-logo">C</div>
+  <span class="nav-course-name">COM 1010 · Communication in the Real World</span>
+  <div class="nav-right">
+    <span class="nav-icon">🔔</span>
+    <span class="nav-icon">❓</span>
+    <div class="nav-avatar">JB</div>
+  </div>
+</nav>
+
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">🏠</span> Home</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">📢</span> Announcements</a>
+    <a class="sidebar-item active" href="#"><span class="sidebar-icon">📚</span> Modules</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">📋</span> Assignments</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">💬</span> Discussions</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">📊</span> Grades</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">👥</span> People</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">📄</span> Syllabus</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">📁</span> Files</a>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <h1 class="page-title">Modules</h1>
+    <p class="page-subtitle">COM 1010 · Spring 2026 · Dr. Reyes</p>
+
+    <!-- PROGRESS -->
+    <div class="progress-bar-wrapper">
+      <span class="progress-label">Course Progress</span>
+      <div class="progress-track"><div class="progress-fill"></div></div>
+      <span class="progress-pct">40% Complete</span>
+    </div>
+
+    <!-- MODULE 1 - COMPLETE -->
+    <div class="module" id="mod1">
+      <div class="module-header" onclick="toggleModule('mod1')">
+        <span class="module-chevron open" id="chevron-mod1">▶</span>
+        <span class="module-title">Module 1 · Interpersonal Communication Processes</span>
+        <span class="module-status-badge badge-complete">✓ Complete</span>
+      </div>
+      <div class="module-items" id="items-mod1">
+        <div class="module-item" onclick="openDetail('Reading', 'Chapter 1: Introduction to Interpersonal Communication', 'Module 1 · Interpersonal Communication Processes', 'Jan 20', '50 pts', 'Covers the fundamental models of communication, key terminology, and the transactional model. Includes Sections 1.1–1.4 of the textbook.', true)">
+          <div class="item-icon icon-complete">✓</div>
+          <span class="item-label">Chapter 1 Reading — Intro to Interpersonal Comm.</span>
+          <span class="item-due">Jan 20</span>
+        </div>
+        <div class="module-item" onclick="openDetail('Quiz', 'Module 1 Quiz', 'Module 1 · Interpersonal Communication Processes', 'Jan 22', '25 pts', '10-question multiple choice quiz covering Chapter 1 concepts. You scored 22/25.', true)">
+          <div class="item-icon icon-complete">✓</div>
+          <span class="item-label">Module 1 Quiz</span>
+          <span class="item-due">Jan 22</span>
+          <span class="item-points">25 pts</span>
+        </div>
+        <div class="module-item" onclick="openDetail('Discussion', 'Discussion: Personal Communication Style', 'Module 1 · Interpersonal Communication Processes', 'Jan 24', '20 pts', 'Reflect on your personal communication style and how it has been shaped by your background. Respond to two classmates.', true)">
+          <div class="item-icon icon-complete">✓</div>
+          <span class="item-label">Discussion: Personal Communication Style</span>
+          <span class="item-due">Jan 24</span>
+          <span class="item-points">20 pts</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODULE 2 - COMPLETE -->
+    <div class="module" id="mod2">
+      <div class="module-header" onclick="toggleModule('mod2')">
+        <span class="module-chevron open" id="chevron-mod2">▶</span>
+        <span class="module-title">Module 2 · Culture and Communication</span>
+        <span class="module-status-badge badge-complete">✓ Complete</span>
+      </div>
+      <div class="module-items" id="items-mod2">
+        <div class="module-item active" onclick="openDetail('Reading', 'Chapter 3: Culture and Communication', 'Module 2 · Culture and Communication', 'Feb 3', '50 pts', 'Examines how cultural background influences communication style, high-context vs. low-context cultures, and intercultural competence. Covers Sections 3.1–3.5.', true)">
+          <div class="item-icon icon-complete">✓</div>
+          <span class="item-label">Chapter 3 Reading — Culture and Communication</span>
+          <span class="item-due">Feb 3</span>
+        </div>
+        <div class="module-item" onclick="openDetail('Quiz', 'Module 2 Quiz', 'Module 2 · Culture and Communication', 'Feb 5', '25 pts', '10-question quiz on intercultural communication theory. You scored 20/25.', true)">
+          <div class="item-icon icon-complete">✓</div>
+          <span class="item-label">Module 2 Quiz</span>
+          <span class="item-due">Feb 5</span>
+          <span class="item-points">25 pts</span>
+        </div>
+        <div class="module-item" onclick="openDetail('Assignment', 'Intercultural Interview Assignment', 'Module 2 · Culture and Communication', 'Feb 10', '50 pts', 'Conduct a 15-minute interview with someone from a different cultural background. Write a 2-page reflection connecting your findings to course concepts.', true)">
+          <div class="item-icon icon-complete">✓</div>
+          <span class="item-label">Intercultural Interview Assignment</span>
+          <span class="item-due">Feb 10</span>
+          <span class="item-points">50 pts</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODULE 3 - IN PROGRESS -->
+    <div class="module" id="mod3">
+      <div class="module-header" onclick="toggleModule('mod3')">
+        <span class="module-chevron open" id="chevron-mod3">▶</span>
+        <span class="module-title">Module 3 · Informative and Persuasive Speaking</span>
+        <span class="module-next-due overdue">📅 Next due: Feb 26</span>
+        <span class="prereq-badge" onclick="event.stopPropagation(); jumpToModule('mod1', 'mod2')">⚠ Prerequisite: Modules 1 &amp; 2</span>
+        <span class="module-status-badge badge-inprogress">⏳ In Progress</span>
+      </div>
+      <div class="module-items" id="items-mod3">
+        <div class="module-item" onclick="openDetail('Reading', 'Chapter 11: Informative Speaking', 'Module 3 · Informative and Persuasive Speaking', 'Feb 24', '50 pts', 'Covers strategies for organizing and delivering informative speeches, including audience analysis, outlining, and use of evidence. Sections 11.1–11.4.', true)">
+          <div class="item-icon icon-complete">✓</div>
+          <span class="item-label">Chapter 11 Reading — Informative Speaking</span>
+          <span class="item-due">Feb 24</span>
+        </div>
+        <div class="module-item" onclick="openDetail('Reading', 'Chapter 12: Persuasive Speaking', 'Module 3 · Informative and Persuasive Speaking', 'Feb 26', '50 pts', 'Examines ethos, pathos, and logos; Monroe\'s Motivated Sequence; and common persuasive fallacies. Sections 12.1–12.5.', false)">
+          <div class="item-icon icon-incomplete">○</div>
+          <span class="item-label">Chapter 12 Reading — Persuasive Speaking</span>
+          <span class="item-due overdue">Feb 26 — Due soon</span>
+        </div>
+        <div class="module-item" onclick="openDetail('Assignment', 'Persuasive Speech Outline', 'Module 3 · Informative and Persuasive Speaking', 'Mar 5', '75 pts', 'Submit a full-sentence outline for your 5-7 minute persuasive speech. Must include a claim, three main points with evidence, and a works cited page.', false)">
+          <div class="item-icon icon-incomplete">○</div>
+          <span class="item-label">Persuasive Speech Outline</span>
+          <span class="item-due overdue">Mar 5 — Overdue</span>
+          <span class="item-points">75 pts</span>
+        </div>
+        <div class="module-item" onclick="openDetail('Assignment', 'Persuasive Speech Delivery', 'Module 3 · Informative and Persuasive Speaking', 'Mar 12', '100 pts', 'Deliver your 5-7 minute persuasive speech in class. You will be graded on delivery, organization, evidence, and overall persuasiveness.', false)">
+          <div class="item-icon icon-incomplete">○</div>
+          <span class="item-label">Persuasive Speech Delivery</span>
+          <span class="item-due">Mar 12</span>
+          <span class="item-points">100 pts</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODULE 4 - NOT STARTED -->
+    <div class="module" id="mod4">
+      <div class="module-header" onclick="toggleModule('mod4')">
+        <span class="module-chevron" id="chevron-mod4">▶</span>
+        <span class="module-title">Module 4 · Small Group Communication</span>
+        <span class="module-next-due">📅 Next due: Mar 17</span>
+        <span class="prereq-badge" onclick="event.stopPropagation(); jumpToModule('mod3')">⚠ Prerequisite: Module 3</span>
+        <span class="module-status-badge badge-incomplete">○ Not Started</span>
+      </div>
+      <div class="module-items collapsed" id="items-mod4">
+        <div class="module-item" onclick="openDetail('Reading', 'Chapter 14: Small Group Communication', 'Module 4 · Small Group Communication', 'Mar 17', '50 pts', 'Explores group roles, decision-making models, leadership styles, and conflict management in small groups. Sections 14.1–14.6.', false, 'Complete Module 3 (Informative &amp; Persuasive Speaking) before starting this module.')">
+          <div class="item-icon icon-incomplete">○</div>
+          <span class="item-label">Chapter 14 Reading — Small Group Communication</span>
+          <span class="item-due">Mar 17</span>
+        </div>
+        <div class="module-item" onclick="openDetail('Discussion', 'Group Dynamics Reflection', 'Module 4 · Small Group Communication', 'Mar 19', '20 pts', 'Describe a real-life group experience and analyze it using concepts from Chapter 14. Respond to two classmates.', false, 'Complete Module 3 before starting this module.')">
+          <div class="item-icon icon-incomplete">○</div>
+          <span class="item-label">Discussion: Group Dynamics Reflection</span>
+          <span class="item-due">Mar 19</span>
+          <span class="item-points">20 pts</span>
+        </div>
+        <div class="module-item" onclick="openDetail('Assignment', 'Group Project — Phase 1 Proposal', 'Module 4 · Small Group Communication', 'Mar 24', '50 pts', 'As a group of 4, submit a 1-page proposal for your group communication analysis project. Include your topic, group roles, and timeline.', false, 'Complete Module 3 before starting this module.')">
+          <div class="item-icon icon-incomplete">○</div>
+          <span class="item-label">Group Project — Phase 1 Proposal</span>
+          <span class="item-due">Mar 24</span>
+          <span class="item-points">50 pts</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODULE 5 - NOT STARTED -->
+    <div class="module" id="mod5">
+      <div class="module-header" onclick="toggleModule('mod5')">
+        <span class="module-chevron" id="chevron-mod5">▶</span>
+        <span class="module-title">Module 5 · Media, Technology, and Communication</span>
+        <span class="module-next-due">📅 Next due: Apr 7</span>
+        <span class="prereq-badge" onclick="event.stopPropagation(); jumpToModule('mod4')">⚠ Prerequisite: Module 4</span>
+        <span class="module-status-badge badge-incomplete">○ Not Started</span>
+      </div>
+      <div class="module-items collapsed" id="items-mod5">
+        <div class="module-item" onclick="openDetail('Reading', 'Chapter 16 Reading — Media and Technology', 'Module 5 · Media, Technology, and Communication', 'Apr 7', '50 pts', 'Explores how digital media and communication technologies shape interpersonal, group, and public communication. Covers Sections 16.1–16.5.', false, 'Complete Module 4 (Small Group Communication) before starting this module.')">
+          <div class="item-icon icon-incomplete">○</div>
+          <span class="item-label">Chapter 16 Reading — Media and Technology</span>
+          <span class="item-due">Apr 7</span>
+        </div>
+        <div class="module-item" onclick="openDetail('Quiz', 'Module 5 Quiz', 'Module 5 · Media, Technology, and Communication', 'Apr 9', '25 pts', '10-question quiz covering media and technology concepts from Chapter 16.', false, 'Complete Module 4 before starting this module.')">
+          <div class="item-icon icon-incomplete">○</div>
+          <span class="item-label">Module 5 Quiz</span>
+          <span class="item-due">Apr 9</span>
+          <span class="item-points">25 pts</span>
+        </div>
+        <div class="module-item" onclick="openDetail('Assignment', 'Final Reflection Essay', 'Module 5 · Media, Technology, and Communication', 'Apr 21', '100 pts', 'Write a 3-page essay reflecting on how communication concepts from all five modules connect to your personal and professional life.', false, 'Complete Module 4 before starting this module.')">
+          <div class="item-icon icon-incomplete">○</div>
+          <span class="item-label">Final Reflection Essay</span>
+          <span class="item-due">Apr 21</span>
+          <span class="item-points">100 pts</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="dim-overlay" id="dimOverlay" onclick="closeDetail()"></div>
+
+<div class="prereq-toast" id="prereqToast"></div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-overlay" id="detailPanel">
+  <div class="detail-header">
+    <div>
+      <div class="detail-module-label" id="dp-module">Module 2 · Culture and Communication</div>
+      <div class="detail-title" id="dp-title">Chapter 3 Reading — Culture and Communication</div>
+    </div>
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="detail-body">
+    <div class="detail-prereq-warning" id="dp-prereq-warn"></div>
+    <div class="detail-meta-row">
+      <div class="meta-item">
+        <span class="meta-key">Type</span>
+        <span class="meta-val" id="dp-type">Reading</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-key">Due Date</span>
+        <span class="meta-val due" id="dp-due">Feb 3</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-key">Points</span>
+        <span class="meta-val" id="dp-pts">50 pts</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-key">Status</span>
+        <span class="meta-val" id="dp-status">✓ Complete</span>
+      </div>
+    </div>
+    <div class="detail-section-title">Description</div>
+    <p class="detail-desc" id="dp-desc">Examines how cultural background influences communication style, high-context vs. low-context cultures, and intercultural competence.</p>
+    <button class="detail-btn" id="dp-btn">View Assignment</button>
+  </div>
+</div>
+
+<div class="screen-label">Condition 1 — Screen 1 · Module List</div>
+
+<script>
+function jumpToModule(...ids) {
+  ids.forEach(id => {
+    const items = document.getElementById('items-' + id);
+    const chevron = document.getElementById('chevron-' + id);
+    if (items.classList.contains('collapsed')) {
+      items.classList.remove('collapsed');
+      chevron.classList.add('open');
+    }
+  });
+  // Scroll to first target
+  const first = document.getElementById(ids[0]);
+  if (first) {
+    first.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Brief highlight flash
+    first.style.outline = '2px solid #FFD580';
+    first.style.outlineOffset = '2px';
+    setTimeout(() => { first.style.outline = ''; first.style.outlineOffset = ''; }, 1600);
+  }
+}
+
+function toggleModule(id) {
+  const items = document.getElementById('items-' + id);
+  const chevron = document.getElementById('chevron-' + id);
+  const isOpen = !items.classList.contains('collapsed');
+  if (isOpen) {
+    items.classList.add('collapsed');
+    chevron.classList.remove('open');
+  } else {
+    items.classList.remove('collapsed');
+    chevron.classList.add('open');
+  }
+}
+
+function openDetail(type, title, module, due, pts, desc, complete, prereqWarn) {
+  document.getElementById('dp-type').textContent = type;
+  document.getElementById('dp-title').textContent = title;
+  document.getElementById('dp-module').textContent = module;
+  document.getElementById('dp-due').textContent = due;
+  document.getElementById('dp-pts').textContent = pts;
+  document.getElementById('dp-desc').textContent = desc;
+  document.getElementById('dp-status').textContent = complete ? 'Complete' : 'Incomplete';
+  document.getElementById('dp-btn').textContent = complete ? 'Review Submission' : 'Begin Assignment';
+  // H9 — show prereq warning inside panel if incomplete and prereq not done
+  const warn = document.getElementById('dp-prereq-warn');
+  if (prereqWarn) {
+    warn.textContent = '⚠ ' + prereqWarn;
+    warn.classList.add('visible');
+  } else {
+    warn.classList.remove('visible');
+  }
+  document.getElementById('detailPanel').classList.add('visible');
+  document.getElementById('dimOverlay').classList.add('visible');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('prereqToast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('visible'), 3000);
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('visible');
+  document.getElementById('dimOverlay').classList.remove('visible');
+}
+</script>
+</body>
+</html>

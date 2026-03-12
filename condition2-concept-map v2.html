@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Condition 2 — Concept Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --canvas-red: #E66000;
+    --canvas-dark: #0A1F44;
+    --canvas-mid: #122255;
+    --canvas-light-bg: #F0F4F7;
+    --canvas-white: #FFFFFF;
+    --canvas-border: #C7CDD1;
+    --canvas-text: #2D3B45;
+    --canvas-muted: #6B7280;
+    --canvas-link: #0770A3;
+    --complete-green: #127A1B;
+    --node-complete: #127A1B;
+    --node-inprogress: #E66000;
+    --node-todo: #2D3B45;
+    --node-locked: #9CA3AF;
+  }
+
+  body {
+    font-family: 'Lato', sans-serif;
+    background: var(--canvas-light-bg);
+    color: var(--canvas-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .top-nav {
+    background: var(--canvas-dark);
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .nav-logo {
+    width: 32px; height: 32px;
+    background: var(--canvas-red);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: white; font-size: 14px;
+  }
+  .nav-course-name { color: white; font-size: 14px; font-weight: 700; }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 20px; }
+  .nav-icon { color: #B8C1C8; font-size: 18px; cursor: pointer; }
+  .nav-avatar {
+    width: 30px; height: 30px; background: #6B7280;
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; color: white; font-size: 12px; font-weight: 700;
+  }
+
+  .app-layout { display: flex; margin-top: 56px; min-height: calc(100vh - 56px); }
+
+  .sidebar {
+    width: 200px; background: var(--canvas-mid);
+    flex-shrink: 0; padding-top: 8px;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; color: #B8C1C8; font-size: 13px;
+    cursor: pointer; transition: background 0.15s; text-decoration: none;
+  }
+  .sidebar-item:hover { background: rgba(255,255,255,0.08); color: white; }
+  .sidebar-item.active {
+    background: rgba(255,255,255,0.12); color: white;
+    border-left: 3px solid var(--canvas-red);
+  }
+  .sidebar-icon { font-size: 15px; width: 18px; text-align: center; }
+
+  /* MAIN MAP AREA */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 28px;
+    overflow: hidden;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+  }
+  .page-title { font-size: 22px; font-weight: 700; }
+  .page-subtitle { font-size: 13px; color: var(--canvas-muted); margin-top: 2px; }
+
+  /* LEGEND — top right of page header (H8) */
+  .legend {
+    display: flex; gap: 20px; align-items: center;
+    background: white; border: 1px solid var(--canvas-border);
+    border-radius: 6px; padding: 8px 16px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-complete { background: var(--node-complete); }
+  .dot-inprogress { background: var(--node-inprogress); }
+  .dot-todo { background: var(--node-todo); }
+  .dot-locked { background: var(--node-locked); }
+
+  /* PROGRESS STRIP */
+  .progress-strip {
+    background: white;
+    border: 1px solid var(--canvas-border);
+    border-radius: 6px;
+    padding: 10px 18px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+  .progress-label { font-size: 13px; color: var(--canvas-muted); white-space: nowrap; }
+  .progress-track {
+    flex: 1; height: 8px; background: var(--canvas-border);
+    border-radius: 4px; overflow: hidden;
+  }
+  .progress-fill { height: 100%; width: 40%; background: var(--node-complete); border-radius: 4px; }
+  .progress-pct { font-size: 13px; font-weight: 700; color: var(--complete-green); }
+
+  /* MAP CANVAS */
+  .map-canvas-wrapper {
+    flex: 1;
+    background: white;
+    border: 1px solid var(--canvas-border);
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    min-height: 480px;
+  }
+
+  svg.connections {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* NODES */
+  .node {
+    position: absolute;
+    border-radius: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    z-index: 2;
+    transition: transform 0.18s, box-shadow 0.18s;
+    user-select: none;
+    min-width: 150px;
+    max-width: 170px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .node:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+    z-index: 10;
+  }
+  .node.selected {
+    outline: 3px solid var(--canvas-link);
+    outline-offset: 2px;
+    z-index: 10;
+  }
+
+  /* Node status styles */
+  .node-complete {
+    background: #EBF7EC;
+    border: 2px solid var(--node-complete);
+  }
+  .node-inprogress {
+    background: #FFF3EC;
+    border: 2px solid var(--node-inprogress);
+  }
+  .node-todo {
+    background: #EEF1F3;
+    border: 2px solid #6B7280;
+  }
+  .node-locked {
+    background: #F5F5F5;
+    border: 2px dashed #C7CDD1;
+    opacity: 0.65;
+  }
+
+  .node-status-icon { font-size: 18px; margin-bottom: 4px; }
+  .node-title { font-size: 13px; font-weight: 800; line-height: 1.3; color: var(--canvas-text); }
+  .node-prereq {
+    margin-top: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #92620A;
+    background: #FEF3CD;
+    border: 1px solid #F0C040;
+    border-radius: 4px;
+    padding: 2px 6px;
+    display: inline-block;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: background 0.15s;
+  }
+  .node-prereq:hover {
+    background: #FDEAA0;
+  }
+  .node-subtitle { font-size: 10px; color: var(--canvas-muted); margin-top: 3px; }
+  .node-progress {
+    margin-top: 6px;
+    height: 4px;
+    background: rgba(0,0,0,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .node-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+  .fill-complete { background: var(--node-complete); }
+  .fill-inprogress { background: var(--node-inprogress); }
+  .fill-todo { background: var(--node-todo); }
+
+  /* Edge labels */
+  .edge-label {
+    position: absolute;
+    font-size: 9px;
+    color: var(--canvas-muted);
+    background: white;
+    padding: 1px 5px;
+    border-radius: 8px;
+    border: 1px solid #E0E0E0;
+    white-space: nowrap;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  /* DETAIL PANEL */
+  .detail-overlay {
+    display: none;
+    position: fixed;
+    top: 56px; right: 0; bottom: 0;
+    width: 380px;
+    background: white;
+    border-left: 1px solid var(--canvas-border);
+    box-shadow: -4px 0 16px rgba(0,0,0,0.12);
+    z-index: 50;
+    flex-direction: column;
+    overflow-y: auto;
+    animation: slideIn 0.22s ease;
+  }
+  .detail-overlay.visible { display: flex; }
+  @keyframes slideIn { from { transform: translateX(30px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+  .detail-header { padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px; }
+  .detail-close {
+    background: none; border: none;
+    color: var(--canvas-muted); font-size: 20px; cursor: pointer;
+    margin-left: auto; line-height: 1;
+  }
+  .detail-node-icon { font-size: 28px; }
+  .detail-title-col { flex: 1; }
+  .detail-title { font-size: 15px; font-weight: 700; color: var(--canvas-text); }
+  .detail-status-row {
+    display: flex; align-items: center; gap: 8px; margin-top: 4px;
+  }
+  .detail-status-badge {
+    font-size: 11px; padding: 2px 8px;
+    border-radius: 10px; font-weight: 600;
+  }
+  .dsb-complete { background: #D4EDDA; color: #127A1B; }
+  .dsb-inprogress { background: #FFE4CC; color: #C05000; }
+  .dsb-todo { background: #E9ECEF; color: #6B7280; }
+  .dsb-locked { background: #F3F4F6; color: #9CA3AF; }
+
+  .detail-divider { height: 1px; background: var(--canvas-border); margin: 0 20px; }
+  .detail-body { padding: 16px 20px; flex: 1; }
+
+  /* RELATIONS section */
+  .relations-title {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--canvas-muted); font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .relation-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--canvas-light-bg);
+    border: 1px solid var(--canvas-border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    margin: 3px 4px 3px 0;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .relation-chip:hover { background: #DDE8EE; }
+  .rel-arrow { font-size: 11px; color: var(--canvas-muted); }
+
+  /* Task items list in detail */
+  .task-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border: 1px solid var(--canvas-border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .task-item:hover { background: var(--canvas-light-bg); }
+  .task-icon { font-size: 14px; }
+  .task-info { flex: 1; }
+  .task-name { font-size: 13px; font-weight: 600; color: var(--canvas-link); }
+  .task-due { font-size: 11px; color: var(--canvas-muted); margin-top: 1px; }
+  .task-due.overdue { color: #C0392B; }
+  .task-check { font-size: 14px; }
+
+  /* Expanded assignment card */
+  .assignment-card {
+    border: 1px solid var(--canvas-border);
+    border-radius: 6px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .assignment-card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    cursor: pointer;
+    background: white;
+    transition: background 0.12s;
+  }
+  .assignment-card-header:hover { background: var(--canvas-light-bg); }
+  .assignment-card-body {
+    display: none;
+    padding: 10px 12px 12px 12px;
+    border-top: 1px solid var(--canvas-border);
+    background: #FAFBFC;
+  }
+  .assignment-card-body.open { display: block; }
+  .assignment-desc {
+    font-size: 12px; color: var(--canvas-muted);
+    line-height: 1.5; margin-bottom: 10px;
+  }
+  .assignment-action-btn {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer; border: none;
+    transition: background 0.12s;
+  }
+  .btn-start { background: var(--canvas-red); color: white; }
+  .btn-start:hover { background: #CC5500; }
+  .btn-review { background: var(--complete-green); color: white; }
+  .btn-review:hover { background: #0E5C13; }
+
+  .open-module-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 9px;
+    background: var(--canvas-dark);
+    color: white;
+    border-radius: 5px;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    border: none;
+    width: 100%;
+    transition: background 0.12s;
+  }
+  .open-module-btn:hover { background: #1A252F; }
+
+  /* DIM OVERLAY when detail panel open */
+  .dim-overlay {
+    display: none;
+    position: fixed;
+    top: 56px; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 49;
+  }
+  .dim-overlay.visible { display: block; }
+
+  .screen-label {
+    position: fixed;
+    bottom: 16px; right: 16px;
+    background: var(--canvas-dark);
+    color: white;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    opacity: 0.7;
+    z-index: 200;
+  }
+
+  /* H1 — next due badge on node */
+  .node-due-badge {
+    display: inline-block;
+    margin-top: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #C0392B;
+    background: #FDECEA;
+    border: 1px solid #F5C6C6;
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+  .node-due-badge.upcoming {
+    color: #7B3F00;
+    background: #FEF3CD;
+    border-color: #F0C040;
+  }
+
+  /* H5/H9 — prereq warning toast */
+  .prereq-toast {
+    display: none;
+    position: fixed;
+    bottom: 32px; left: 50%; transform: translateX(-50%);
+    background: #7B3F00;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    z-index: 300;
+    max-width: 480px;
+    text-align: center;
+    animation: fadeUp 0.2s ease;
+  }
+  .prereq-toast.visible { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  /* H9 — prereq warning inside detail panel */
+  .detail-prereq-warning {
+    display: none;
+    background: #FEF3CD;
+    border: 1px solid #F0C040;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: #7B3F00;
+    line-height: 1.5;
+  }
+  .detail-prereq-warning.visible { display: block; }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    background: var(--canvas-dark);
+    color: white;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .tooltip.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <div class="nav-logo">C</div>
+  <span class="nav-course-name">COM 1010 · Communication in the Real World</span>
+  <div class="nav-right">
+    <span class="nav-icon">🔔</span>
+    <span class="nav-icon">❓</span>
+    <div class="nav-avatar">JB</div>
+  </div>
+</nav>
+
+<div class="app-layout">
+
+  <nav class="sidebar">
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">🏠</span> Home</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">📢</span> Announcements</a>
+    <a class="sidebar-item active" href="#"><span class="sidebar-icon">🗺️</span> Course Map</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">📋</span> Assignments</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">💬</span> Discussions</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">📊</span> Grades</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">👥</span> People</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">📄</span> Syllabus</a>
+    <a class="sidebar-item" href="#"><span class="sidebar-icon">📁</span> Files</a>
+  </nav>
+
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Course Concept Map</h1>
+        <p class="page-subtitle">COM 1010 · Spring 2026 · Dr. Reyes — Click any topic to explore its content</p>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot dot-complete"></div> ✓ Complete</div>
+        <div class="legend-item"><div class="legend-dot dot-inprogress"></div> ⏳ In Progress</div>
+        <div class="legend-item"><div class="legend-dot dot-todo"></div> ○ Not Started</div>
+        <div class="legend-item" style="margin-left:12px;border-left:1px solid #C7CDD1;padding-left:12px;color:#6B7280;">→ prerequisite</div>
+      </div>
+    </div>
+
+    <div class="progress-strip">
+      <span class="progress-label">Course Progress</span>
+      <div class="progress-track"><div class="progress-fill"></div></div>
+      <span class="progress-pct">40% Complete</span>
+    </div>
+
+    <div class="map-canvas-wrapper" id="mapCanvas">
+      <!-- SVG connections rendered by JS -->
+      <svg class="connections" id="svgLayer"></svg>
+
+      <!-- NODES - positioned by CSS, centered in wrapper -->
+      <!-- Node 1: Interpersonal (top-left, complete) -->
+      <div class="node node-complete" id="node-interpersonal"
+           style="left: 8%; top: 10%;"
+           onclick="openNodeDetail('interpersonal')"
+           onmouseenter="showTooltip(event,'Interpersonal Communication Processes')"
+           onmouseleave="hideTooltip()">
+        <div class="node-title">Interpersonal Communication</div>
+        <div class="node-subtitle">Module 1 · Complete</div>
+        <div class="node-progress"><div class="node-progress-fill fill-complete" style="width:100%"></div></div>
+      </div>
+
+      <!-- Node 2: Culture (top-right, complete) -->
+      <div class="node node-complete" id="node-culture"
+           style="right: 8%; top: 10%;"
+           onclick="openNodeDetail('culture')"
+           onmouseenter="showTooltip(event,'Culture and Communication')"
+           onmouseleave="hideTooltip()">
+        <div class="node-title">Culture &amp; Communication</div>
+        <div class="node-subtitle">Module 2 · Complete</div>
+        <div class="node-progress"><div class="node-progress-fill fill-complete" style="width:100%"></div></div>
+      </div>
+
+      <!-- Node 3: Persuasive Speaking (center, in progress) -->
+      <div class="node node-inprogress" id="node-persuasive"
+           style="left: 50%; top: 38%; transform: translateX(-50%);"
+           onclick="openNodeDetail('persuasive')"
+           onmouseenter="showTooltip(event,'Informative & Persuasive Speaking')"
+           onmouseleave="hideTooltip()">
+        <div class="node-title">Informative &amp; Persuasive Speaking</div>
+        <div class="node-subtitle">Module 3 · In Progress</div>
+        <div class="node-due-badge">📅 Next due: Feb 26</div>
+        <div class="node-progress"><div class="node-progress-fill fill-inprogress" style="width:33%"></div></div>
+      </div>
+
+      <!-- Node 4: Small Group (bottom-left, not started) -->
+      <div class="node node-todo" id="node-smallgroup"
+           style="left: 8%; bottom: 12%;"
+           onclick="openNodeDetail('smallgroup')"
+           onmouseenter="showTooltip(event,'Small Group Communication')"
+           onmouseleave="hideTooltip()">
+        <div class="node-title">Small Group Communication</div>
+        <div class="node-subtitle">Module 4 · Not Started</div>
+        <div class="node-due-badge upcoming">📅 Next due: Mar 17</div>
+        <div class="node-progress"><div class="node-progress-fill fill-todo" style="width:0%"></div></div>
+      </div>
+
+      <!-- Node 5: Media (bottom-right, not started) -->
+      <div class="node node-todo" id="node-media"
+           style="right: 8%; bottom: 12%;"
+           onclick="openNodeDetail('media')"
+           onmouseenter="showTooltip(event,'Media, Technology & Communication')"
+           onmouseleave="hideTooltip()">
+        <div class="node-title">Media, Technology &amp; Communication</div>
+        <div class="node-subtitle">Module 5 · Not Started</div>
+        <div class="node-due-badge upcoming">📅 Next due: Apr 7</div>
+        <div class="node-progress"><div class="node-progress-fill fill-todo" style="width:0%"></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="prereq-toast" id="prereqToast"></div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-overlay" id="detailPanel">
+  <div class="detail-header">
+    <div class="detail-node-icon" id="dp-icon">✅</div>
+    <div class="detail-title-col">
+      <div class="detail-title" id="dp-title">Culture &amp; Communication</div>
+      <div class="detail-status-row">
+        <span class="detail-status-badge dsb-complete" id="dp-badge">✓ Complete</span>
+      </div>
+    </div>
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="detail-divider"></div>
+
+  <div class="detail-body">
+    <div class="detail-prereq-warning" id="dp-prereq-warn"></div>
+
+    <!-- CONCEPTUAL RELATIONSHIPS -->
+    <div class="relations-title">Related Topics</div>
+    <div id="dp-relations"></div>
+
+    <br>
+
+    <!-- ASSIGNMENTS -->
+    <div class="relations-title">Module Assignments</div>
+    <div id="dp-tasks"></div>
+
+    <button class="open-module-btn" onclick="closeDetail()">
+      ↗ Open Full Module
+    </button>
+  </div>
+</div>
+
+<div class="dim-overlay" id="dimOverlay" onclick="closeDetail()"></div>
+
+<div class="tooltip" id="tooltip"></div>
+<div class="screen-label">Condition 2 — Screen 1 · Concept Map</div>
+
+<script>
+// ─── Node data ───────────────────────────────────────────────────────────────
+const nodes = {
+  interpersonal: {
+    id: 'node-interpersonal', icon: '✅',
+    title: 'Interpersonal Communication Processes',
+    badge: '✓ Complete', badgeClass: 'dsb-complete',
+    relations: [
+      { label: 'prerequisite for', target: 'Persuasive Speaking', dir: '→' },
+    ],
+    tasks: [
+      { icon: '📖', name: 'Chapter 1 Reading', due: 'Jan 20', status: '✓', overdue: false, complete: true,
+        desc: 'Covers the fundamental models of communication, key terminology, and the transactional model. Includes Sections 1.1–1.4.' },
+      { icon: '📝', name: 'Module 1 Quiz', due: 'Jan 22 · 25 pts', status: '✓', overdue: false, complete: true,
+        desc: '10-question multiple choice quiz covering Chapter 1 concepts. You scored 22/25.' },
+      { icon: '💬', name: 'Discussion: Personal Communication Style', due: 'Jan 24 · 20 pts', status: '✓', overdue: false, complete: true,
+        desc: 'Reflect on your personal communication style and how it has been shaped by your background. Respond to two classmates.' },
+    ]
+  },
+  culture: {
+    id: 'node-culture', icon: '✅',
+    title: 'Culture & Communication',
+    badge: '✓ Complete', badgeClass: 'dsb-complete',
+    relations: [
+      { label: 'prerequisite for', target: 'Persuasive Speaking', dir: '→' },
+    ],
+    tasks: [
+      { icon: '📖', name: 'Chapter 3 Reading — Culture & Communication', due: 'Feb 3', status: '✓', overdue: false, complete: true,
+        desc: 'Examines how cultural background influences communication style, high-context vs. low-context cultures, and intercultural competence. Covers Sections 3.1–3.5.' },
+      { icon: '📝', name: 'Module 2 Quiz', due: 'Feb 5 · 25 pts', status: '✓', overdue: false, complete: true,
+        desc: '10-question quiz on intercultural communication theory. You scored 20/25.' },
+      { icon: '📋', name: 'Intercultural Interview Assignment', due: 'Feb 10 · 50 pts', status: '✓', overdue: false, complete: true,
+        desc: 'Conduct a 15-minute interview with someone from a different cultural background. Write a 2-page reflection connecting your findings to course concepts.' },
+    ]
+  },
+  persuasive: {
+    id: 'node-persuasive', icon: '⏳',
+    title: 'Informative & Persuasive Speaking',
+    badge: 'In Progress', badgeClass: 'dsb-inprogress',
+    relations: [
+      { label: 'requires', target: 'Interpersonal Communication', dir: '←' },
+      { label: 'requires', target: 'Culture & Communication', dir: '←' },
+      { label: 'prerequisite for', target: 'Small Group Communication', dir: '→' },
+    ],
+    tasks: [
+      { icon: '📖', name: 'Chapter 11 Reading — Informative Speaking', due: 'Feb 24', status: '✓', overdue: false, complete: true,
+        desc: 'Covers strategies for organizing and delivering informative speeches, including audience analysis, outlining, and use of evidence. Sections 11.1–11.4.' },
+      { icon: '📖', name: 'Chapter 12 Reading — Persuasive Speaking', due: 'Feb 26', status: '○', overdue: true, complete: false,
+        desc: 'Examines ethos, pathos, and logos; Monroe\'s Motivated Sequence; and common persuasive fallacies. Sections 12.1–12.5.' },
+      { icon: '📋', name: 'Persuasive Speech Outline', due: 'Mar 5 · 75 pts', status: '○', overdue: true, complete: false,
+        desc: 'Submit a full-sentence outline for your 5-7 minute persuasive speech. Must include a claim, three main points with evidence, and a works cited page.' },
+      { icon: '🎤', name: 'Persuasive Speech Delivery', due: 'Mar 12 · 100 pts', status: '○', overdue: false, complete: false,
+        desc: 'Deliver your 5-7 minute persuasive speech in class. Graded on delivery, organization, evidence, and overall persuasiveness.' },
+    ]
+  },
+  smallgroup: {
+    id: 'node-smallgroup', icon: '○',
+    title: 'Small Group Communication',
+    badge: 'Not Started', badgeClass: 'dsb-todo',
+    relations: [
+      { label: 'requires', target: 'Persuasive Speaking', dir: '←' },
+      { label: 'prerequisite for', target: 'Media & Technology', dir: '→' },
+    ],
+    tasks: [
+      { icon: '📖', name: 'Chapter 14 Reading — Small Group Comm.', due: 'Mar 17', status: '○', overdue: false, complete: false,
+        desc: 'Explores group roles, decision-making models, leadership styles, and conflict management in small groups. Sections 14.1–14.6.' },
+      { icon: '💬', name: 'Discussion: Group Dynamics Reflection', due: 'Mar 19 · 20 pts', status: '○', overdue: false, complete: false,
+        desc: 'Describe a real-life group experience and analyze it using concepts from Chapter 14. Respond to two classmates.' },
+      { icon: '📋', name: 'Group Project — Phase 1 Proposal', due: 'Mar 24 · 50 pts', status: '○', overdue: false, complete: false,
+        desc: 'As a group of 4, submit a 1-page proposal for your group communication analysis project. Include your topic, group roles, and timeline.' },
+    ]
+  },
+  media: {
+    id: 'node-media', icon: '○',
+    title: 'Media, Technology & Communication',
+    badge: 'Not Started', badgeClass: 'dsb-todo',
+    relations: [
+      { label: 'requires', target: 'Small Group Communication', dir: '←' },
+    ],
+    tasks: [
+      { icon: '📖', name: 'Chapter 16 Reading — Media & Technology', due: 'Apr 7', status: '○', overdue: false, complete: false,
+        desc: 'Explores how digital media and communication technologies shape interpersonal, group, and public communication. Covers Sections 16.1–16.5.' },
+      { icon: '📝', name: 'Module 5 Quiz', due: 'Apr 9', status: '○', overdue: false, complete: false,
+        desc: '10-question quiz covering media and technology concepts from Chapter 16.' },
+      { icon: '📋', name: 'Final Reflection Essay', due: 'Apr 21', status: '○', overdue: false, complete: false,
+        desc: 'Write a 3-page essay reflecting on how communication concepts from all five modules connect to your personal and professional life.' },
+    ]
+  }
+};
+
+// ─── Draw SVG edges ───────────────────────────────────────────────────────────
+function getNodeCenter(nodeId) {
+  const el = document.getElementById(nodeId);
+  const wrapper = document.getElementById('mapCanvas');
+  const wr = wrapper.getBoundingClientRect();
+  const nr = el.getBoundingClientRect();
+  return {
+    x: nr.left - wr.left + nr.width / 2,
+    y: nr.top - wr.top + nr.height / 2
+  };
+}
+
+const edgeDefs = [
+  { from: 'node-interpersonal', to: 'node-persuasive', label: 'prerequisite', color: '#127A1B' },
+  { from: 'node-culture', to: 'node-persuasive', label: 'prerequisite', color: '#127A1B' },
+  { from: 'node-persuasive', to: 'node-smallgroup', label: 'prerequisite', color: '#127A1B' },
+  { from: 'node-smallgroup', to: 'node-media', label: 'prerequisite', color: '#127A1B' },
+];
+
+function drawEdges() {
+  const svg = document.getElementById('svgLayer');
+  svg.innerHTML = '';
+
+  // Arrow marker
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  const colors = ['#127A1B', '#0770A3', '#2D3B45', '#E66000', '#9CA3AF'];
+  colors.forEach(c => {
+    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+    const safeId = 'arrow-' + c.replace('#', '');
+    marker.setAttribute('id', safeId);
+    marker.setAttribute('markerWidth', '16');
+    marker.setAttribute('markerHeight', '16');
+    marker.setAttribute('refX', '8');
+    marker.setAttribute('refY', '4');
+    marker.setAttribute('orient', 'auto');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M0,0 L0,8 L12,4 z');
+    path.setAttribute('fill', c);
+    path.setAttribute('opacity', '1');
+    marker.appendChild(path);
+    defs.appendChild(marker);
+  });
+  svg.appendChild(defs);
+
+  edgeDefs.forEach(edge => {
+    try {
+      const fromEl = document.getElementById(edge.from);
+      const toEl = document.getElementById(edge.to);
+      const wrapper = document.getElementById('mapCanvas');
+      const wr = wrapper.getBoundingClientRect();
+      const fr = fromEl.getBoundingClientRect();
+      const tr = toEl.getBoundingClientRect();
+
+      const from = { x: fr.left - wr.left + fr.width/2, y: fr.top - wr.top + fr.height/2 };
+      const to   = { x: tr.left - wr.left + tr.width/2, y: tr.top - wr.top + tr.height/2 };
+
+      // Shorten end point so arrow tip lands on node border, not under it
+      const angle = Math.atan2(to.y - from.y, to.x - from.x);
+      const pad = 90; // half node width (~85px) + arrowhead clearance
+      const toEdge = {
+        x: to.x - Math.cos(angle) * pad,
+        y: to.y - Math.sin(angle) * pad
+      };
+      const fromEdge = {
+        x: from.x + Math.cos(angle) * 90,
+        y: from.y + Math.sin(angle) * 90
+      };
+
+      const markerId = 'arrow-' + edge.color.replace('#', '');
+
+      // Curved path
+      const mx = (fromEdge.x + toEdge.x) / 2;
+      const my = (fromEdge.y + toEdge.y) / 2;
+      const dx = toEdge.x - fromEdge.x;
+      const dy = toEdge.y - fromEdge.y;
+      const nx = -dy * 0.15;
+      const ny = dx * 0.15;
+      const cx = mx + nx;
+      const cy = my + ny;
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      line.setAttribute('d', `M ${fromEdge.x} ${fromEdge.y} Q ${cx} ${cy} ${toEdge.x} ${toEdge.y}`);
+      line.setAttribute('stroke', edge.color);
+      line.setAttribute('stroke-width', '2.5');
+      line.setAttribute('stroke-opacity', '0.85');
+      line.setAttribute('fill', 'none');
+      line.setAttribute('marker-end', `url(#${markerId})`);
+      svg.appendChild(line);
+
+      // Label at midpoint of curve
+      const t = 0.5;
+      const lx = (1-t)*(1-t)*fromEdge.x + 2*(1-t)*t*cx + t*t*toEdge.x;
+      const ly = (1-t)*(1-t)*fromEdge.y + 2*(1-t)*t*cy + t*t*toEdge.y;
+
+      const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+      fo.setAttribute('x', lx - 55);
+      fo.setAttribute('y', ly - 12);
+      fo.setAttribute('width', '110');
+      fo.setAttribute('height', '24');
+      fo.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" style="font-size:10px;font-weight:700;color:#127A1B;background:white;padding:2px 7px;border-radius:8px;border:1px solid #127A1B;text-align:center;white-space:nowrap;">${edge.label}</div>`;
+      svg.appendChild(fo);
+
+    } catch(e) {}
+  });
+}
+
+// ─── Detail Panel ─────────────────────────────────────────────────────────────
+function openNodeDetail(key) {
+  const data = nodes[key];
+  if (!data) return;
+
+  // Deselect all, select this
+  document.querySelectorAll('.node').forEach(n => n.classList.remove('selected'));
+  document.getElementById(data.id).classList.add('selected');
+
+  document.getElementById('dp-icon').textContent = data.icon;
+  document.getElementById('dp-title').textContent = data.title;
+  const badge = document.getElementById('dp-badge');
+  badge.textContent = data.badge;
+  badge.className = 'detail-status-badge ' + data.badgeClass;
+
+  // Relations
+  const relDiv = document.getElementById('dp-relations');
+  relDiv.innerHTML = data.relations.map(r =>
+    `<span class="relation-chip"><span class="rel-arrow">${r.dir}</span> ${r.label}: <strong>${r.target}</strong></span>`
+  ).join('');
+
+  // Tasks — expandable cards with description + action button
+  const taskDiv = document.getElementById('dp-tasks');
+  taskDiv.innerHTML = data.tasks.map((t, i) => {
+    const cardId = `card-${key}-${i}`;
+    const btnClass = t.complete ? 'btn-review' : 'btn-start';
+    const btnLabel = t.complete ? '✓ Review Submission' : '→ Start Assignment';
+    return `<div class="assignment-card">
+      <div class="assignment-card-header" onclick="toggleCard('${cardId}')">
+        <span class="task-icon">${t.icon}</span>
+        <div class="task-info">
+          <div class="task-name">${t.name}</div>
+          <div class="task-due ${t.overdue ? 'overdue' : ''}">${t.due}${t.overdue ? ' — Overdue' : ''}</div>
+        </div>
+        <span class="task-check">${t.status}</span>
+      </div>
+      <div class="assignment-card-body" id="${cardId}">
+        <p class="assignment-desc">${t.desc}</p>
+        <button class="assignment-action-btn ${btnClass}">${btnLabel}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // H5/H9 — show prereq warning for nodes with unmet prerequisites
+  const prereqWarnings = {
+    smallgroup: 'Complete Module 3 (Informative & Persuasive Speaking) before starting this module.',
+    media: 'Complete Module 4 (Small Group Communication) before starting this module.'
+  };
+  const warn = document.getElementById('dp-prereq-warn');
+  if (prereqWarnings[key]) {
+    warn.textContent = '⚠ ' + prereqWarnings[key];
+    warn.classList.add('visible');
+  } else {
+    warn.classList.remove('visible');
+  }
+
+  document.getElementById('detailPanel').classList.add('visible');
+  document.getElementById('dimOverlay').classList.add('visible');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('prereqToast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('visible'), 3000);
+}
+
+function jumpToNodes(...ids) {
+  closeDetail();
+  ids.forEach((id, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.outline = '3px solid #F0C040';
+      el.style.outlineOffset = '4px';
+      setTimeout(() => { el.style.outline = ''; el.style.outlineOffset = ''; }, 1600);
+    }, i * 300);
+  });
+}
+
+function toggleCard(id) {
+  const body = document.getElementById(id);
+  body.classList.toggle('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('visible');
+  document.getElementById('dimOverlay').classList.remove('visible');
+  document.querySelectorAll('.node').forEach(n => n.classList.remove('selected'));
+}
+
+// Tooltip
+function showTooltip(e, text) {
+  const t = document.getElementById('tooltip');
+  t.textContent = text;
+  t.style.left = (e.clientX + 10) + 'px';
+  t.style.top = (e.clientY - 28) + 'px';
+  t.classList.add('visible');
+}
+function hideTooltip() {
+  document.getElementById('tooltip').classList.remove('visible');
+}
+
+// Init
+window.addEventListener('load', () => {
+  setTimeout(drawEdges, 100);
+});
+window.addEventListener('resize', drawEdges);
+</script>
+</body>
+</html>
